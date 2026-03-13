@@ -54,6 +54,63 @@ async function fetchPageTitle() {
 }
 
 /**
+ * Fetch page title for any page by ID.
+ */
+async function fetchPageTitleById(pageId) {
+  try {
+    const page = await notion.pages.retrieve({ page_id: pageId });
+    const titleProp = Object.values(page.properties).find(
+      (p) => p.type === 'title'
+    );
+    if (titleProp && titleProp.title.length > 0) {
+      return titleProp.title.map((t) => t.plain_text).join('');
+    }
+  } catch {
+    // ignore
+  }
+  return 'Exclusive Content';
+}
+
+/**
+ * Return the IDs of all child pages directly under the parent page.
+ * IDs are returned as a Set of dash-stripped hex strings for easy lookup.
+ */
+async function getChildPageIds() {
+  const ids = new Set();
+  let cursor;
+
+  do {
+    const response = await notion.blocks.children.list({
+      block_id: PAGE_ID,
+      start_cursor: cursor,
+      page_size: 100,
+    });
+
+    for (const block of response.results) {
+      if (block.type === 'child_page') {
+        ids.add(block.id.replace(/-/g, ''));
+      }
+    }
+
+    cursor = response.next_cursor;
+  } while (cursor);
+
+  return ids;
+}
+
+/**
+ * Return a specific child page as HTML, fetched by its page ID.
+ */
+async function getPageContent(pageId) {
+  const [title, blocks] = await Promise.all([
+    fetchPageTitleById(pageId),
+    fetchBlocks(pageId),
+  ]);
+  const bodyHtml = blocksToHtml(blocks);
+  return { title, bodyHtml };
+}
+
+/**
  * Convert a single rich-text array to plain text.
  */
 function richTextToPlain(richTexts = []) {
@@ -196,4 +253,4 @@ async function getPreview(count = 5) {
   return { title, previewHtml, totalBlocks: blocks.length };
 }
 
-module.exports = { getFullContent, getPreview };
+module.exports = { getFullContent, getPreview, getChildPageIds, getPageContent };
