@@ -2,22 +2,37 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { getEmailByToken } = require('../db');
-const { getFullContent } = require('../notion');
+const { getChildPageIds, getPageContent } = require('../notion');
 
 const router = express.Router();
 
-// Simple in-memory cache to avoid hammering Notion API on every request
-let cache = null;
-let cacheTime = 0;
 const CACHE_TTL_MS = parseInt(process.env.CONTENT_CACHE_TTL_MS || '300000', 10); // 5 min default
 
-async function getCachedContent() {
+// Per-page content cache: pageId -> { data, time }
+const pageCache = new Map();
+
+// Child page ID cache
+let childPageIds = null;
+let childPageIdsCacheTime = 0;
+
+async function getCachedChildPageIds() {
   const now = Date.now();
-  if (!cache || now - cacheTime > CACHE_TTL_MS) {
-    cache = await getFullContent();
-    cacheTime = now;
+  if (!childPageIds || now - childPageIdsCacheTime > CACHE_TTL_MS) {
+    childPageIds = await getChildPageIds();
+    childPageIdsCacheTime = now;
   }
-  return cache;
+  return childPageIds;
+}
+
+async function getCachedPageContent(pageId) {
+  const now = Date.now();
+  const cached = pageCache.get(pageId);
+  if (!cached || now - cached.time > CACHE_TTL_MS) {
+    const data = await getPageContent(pageId);
+    pageCache.set(pageId, { data, time: now });
+    return data;
+  }
+  return cached.data;
 }
 
 function authMiddleware(req, res, next) {
@@ -34,9 +49,16 @@ function authMiddleware(req, res, next) {
   next();
 }
 
-router.get('/', authMiddleware, async (req, res, next) => {
+router.get('/:pageId', authMiddleware, async (req, res, next) => {
   try {
-    const { title, bodyHtml } = await getCachedContent();
+    const rawId = req.params.pageId.replace(/-/g, '');
+
+    const validIds = await getCachedChildPageIds();
+    if (!validIds.has(rawId)) {
+      return res.status(404).send('<h2>Page not found</h2>');
+    }
+
+    const { title, bodyHtml } = await getCachedPageContent(req.params.pageId);
 
     const template = fs.readFileSync(
       path.join(__dirname, '..', '..', 'views', 'content.html'),
@@ -52,13 +74,6 @@ router.get('/', authMiddleware, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-
-// Allow users to clear their cache (force refresh from Notion)
-router.post('/refresh-cache', authMiddleware, (_req, res) => {
-  cache = null;
-  cacheTime = 0;
-  res.redirect('/content');
 });
 
 function escapeHtml(str) {

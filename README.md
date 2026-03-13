@@ -12,11 +12,11 @@ Runs on Docker, deployed behind Traefik with automatic HTTPS via Let's Encrypt.
 
 ```
 Browser → Traefik (HTTPS) → Express app
-                                ├── GET  /            Landing page with Notion preview
-                                ├── POST /checkout    Create Stripe Checkout Session
-                                ├── GET  /success     Post-payment token issuance
-                                ├── GET  /content     Full Notion page (auth-gated)
-                                └── POST /webhook     Stripe payment events
+                                ├── GET  /                    Landing page with Notion preview
+                                ├── POST /checkout            Create Stripe Checkout Session
+                                ├── GET  /success             Post-payment token issuance
+                                ├── GET  /content/:pageId     Child page content (auth-gated)
+                                └── POST /webhook             Stripe payment events
 ```
 
 Access control is cookie-based: after payment a `uuid` token is stored in SQLite and set as an `HttpOnly` cookie for 30 days.
@@ -38,10 +38,12 @@ Access control is cookie-based: after payment a `uuid` token is stored in SQLite
 
 1. Go to [notion.so/my-integrations](https://www.notion.so/my-integrations) and create a new integration.
    Copy the **Internal Integration Token** → `NOTION_API_KEY`.
-2. Open the Notion page you want to sell, click **···** → **Add connections** → select your integration.
-3. Copy the page ID from the URL:
-   `https://www.notion.so/My-Page-<PAGE_ID>`
+2. Create a **parent Notion page** that contains your sub-pages as child pages.
+   Open it, click **···** → **Add connections** → select your integration (this shares the parent and all its children).
+3. Copy the parent page ID from the URL:
+   `https://www.notion.so/My-Parent-Page-<PAGE_ID>`
    The `PAGE_ID` is the 32-character hex string at the end.  → `NOTION_PAGE_ID`.
+4. Each child page will be accessible at `/content/<child-page-id>` after payment.
 
 ---
 
@@ -135,7 +137,7 @@ npm run dev      # nodemon auto-reload
 | `PORT` | | Port the server listens on (default: `3000`) |
 | `NODE_ENV` | | Set to `production` in Docker |
 | `NOTION_API_KEY` | ✅ | Notion integration token |
-| `NOTION_PAGE_ID` | ✅ | 32-char Notion page ID |
+| `NOTION_PAGE_ID` | ✅ | 32-char ID of the parent Notion page whose child pages are served |
 | `PREVIEW_BLOCKS` | | Number of blocks shown in the free preview (default: `5`) |
 | `STRIPE_SECRET_KEY` | ✅ | Stripe secret key |
 | `STRIPE_PRICE_ID` | ✅ | Stripe Price ID for the product |
