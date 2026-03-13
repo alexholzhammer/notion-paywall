@@ -1,6 +1,6 @@
 {
   "name": "notion-paywall",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Notion content paywall powered by Stripe and Express",
   "main": "src/index.js",
   "scripts": {
