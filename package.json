@@ -1,0 +1,26 @@
+{
+  "name": "notion-paywall",
+  "version": "1.0.0",
+  "description": "Notion content paywall powered by Stripe and Express",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.15",
+    "better-sqlite3": "^9.4.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "marked": "^12.0.0",
+    "stripe": "^14.21.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

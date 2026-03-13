@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TITLE}}</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-row">
+      <span class="logo">automatisierer.io</span>
+      <span class="user-badge" title="Logged in as {{EMAIL}}">
+        ✅ &nbsp;{{EMAIL}}
+      </span>
+    </div>
+  </header>
+
+  <main class="container content-page">
+    <h1 class="content-title">{{TITLE}}</h1>
+
+    <article class="notion-body">
+      {{BODY_HTML}}
+    </article>
+
+    <div class="content-footer-actions">
+      <form action="/content/refresh-cache" method="POST" style="display:inline">
+        <button type="submit" class="btn-secondary">↻ Refresh content</button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; automatisierer.io &nbsp;·&nbsp; <a href="mailto:support@automatisierer.io">Contact</a></p>
+    </div>
+  </footer>
+</body>
+</html>

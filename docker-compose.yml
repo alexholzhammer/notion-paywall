@@ -1,0 +1,49 @@
+services:
+  paywall:
+    build: .
+    container_name: notion-paywall
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      # Persist SQLite database outside the container
+      - paywall-data:/app/data
+    networks:
+      - traefik-public
+    labels:
+      # ── Traefik integration ──────────────────────────────────────────────
+      - "traefik.enable=true"
+
+      # Router — HTTPS
+      - "traefik.http.routers.paywall.rule=Host(`paywall.automatisierer.io`)"
+      - "traefik.http.routers.paywall.entrypoints=websecure"
+      - "traefik.http.routers.paywall.tls=true"
+      - "traefik.http.routers.paywall.tls.certresolver=letsencrypt"
+
+      # Router — HTTP (redirect to HTTPS)
+      - "traefik.http.routers.paywall-http.rule=Host(`paywall.automatisierer.io`)"
+      - "traefik.http.routers.paywall-http.entrypoints=web"
+      - "traefik.http.routers.paywall-http.middlewares=redirect-to-https"
+
+      # Middleware: HTTP → HTTPS redirect
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+      # Service: point Traefik to the app port
+      - "traefik.http.services.paywall.loadbalancer.server.port=3000"
+
+      # Security headers middleware
+      - "traefik.http.middlewares.paywall-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.paywall-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.paywall-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.paywall-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.paywall-headers.headers.browserXssFilter=true"
+      - "traefik.http.routers.paywall.middlewares=paywall-headers"
+      # ────────────────────────────────────────────────────────────────────
+
+volumes:
+  paywall-data:
+
+networks:
+  # Must match the external network your Traefik instance is connected to
+  traefik-public:
+    external: true

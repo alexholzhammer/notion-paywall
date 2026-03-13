@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TITLE}}</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <span class="logo">automatisierer.io</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <h1>{{PRODUCT_NAME}}</h1>
+      <p class="hero-sub">Get instant, lifetime access to the full guide — no subscription.</p>
+    </section>
+
+    <!-- Preview -->
+    <section class="preview-wrapper">
+      <div class="preview-content notion-body">
+        {{PREVIEW_HTML}}
+      </div>
+
+      <!-- Blur / paywall gate -->
+      <div class="paywall-gate">
+        <div class="gate-card">
+          <div class="lock-icon" aria-hidden="true">🔒</div>
+          <p class="gate-headline">
+            <span class="hidden-count">{{HIDDEN_COUNT}} more sections</span> are waiting for you
+          </p>
+
+          <form action="/checkout" method="POST" class="checkout-form">
+            <input
+              type="email"
+              name="email"
+              placeholder="your@email.com"
+              required
+              class="email-input"
+              autocomplete="email"
+            >
+            <button type="submit" class="btn-primary">
+              Get Full Access — {{PRICE}}
+            </button>
+          </form>
+
+          <p class="gate-note">One-time payment &nbsp;·&nbsp; Instant access &nbsp;·&nbsp; Secure checkout via Stripe</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Already purchased? -->
+    <section class="already-paid">
+      <p>Already purchased? <a href="/content">Access your content →</a></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; automatisierer.io &nbsp;·&nbsp; <a href="mailto:support@automatisierer.io">Contact</a></p>
+    </div>
+  </footer>
+</body>
+</html>
