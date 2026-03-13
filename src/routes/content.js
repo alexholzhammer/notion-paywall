@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { getEmailByToken } = require('../db');
-const { getChildPageIds, getChildPages, getPageContent } = require('../notion');
+const { getChildPageIds, getFullContent, getPageContent } = require('../notion');
 
 const router = express.Router();
 
@@ -10,6 +10,10 @@ const CACHE_TTL_MS = parseInt(process.env.CONTENT_CACHE_TTL_MS || '300000', 10);
 
 // Per-page content cache: pageId -> { data, time }
 const pageCache = new Map();
+
+// Parent page content cache
+let parentCache = null;
+let parentCacheTime = 0;
 
 // Child page ID cache
 let childPageIds = null;
@@ -51,15 +55,12 @@ function authMiddleware(req, res, next) {
 
 router.get('/', authMiddleware, async (req, res, next) => {
   try {
-    const pages = await getChildPages();
-
-    const listHtml = pages.length
-      ? '<ul class="page-list">' +
-        pages.map(p =>
-          `<li><a href="/content/${encodeURIComponent(p.id)}">${escapeHtml(p.title)}</a></li>`
-        ).join('') +
-        '</ul>'
-      : '<p>No pages found under the parent page.</p>';
+    const now = Date.now();
+    if (!parentCache || now - parentCacheTime > CACHE_TTL_MS) {
+      parentCache = await getFullContent();
+      parentCacheTime = now;
+    }
+    const { title, bodyHtml } = parentCache;
 
     const template = fs.readFileSync(
       path.join(__dirname, '..', '..', 'views', 'content.html'),
@@ -67,8 +68,8 @@ router.get('/', authMiddleware, async (req, res, next) => {
     );
 
     const html = template
-      .replace(/{{TITLE}}/g, 'Your Content')
-      .replace('{{BODY_HTML}}', listHtml)
+      .replace(/{{TITLE}}/g, escapeHtml(title))
+      .replace('{{BODY_HTML}}', bodyHtml)
       .replace(/{{EMAIL}}/g, escapeHtml(req.userEmail));
 
     res.send(html);
@@ -80,6 +81,8 @@ router.get('/', authMiddleware, async (req, res, next) => {
 // Allow users to clear their cache (force refresh from Notion)
 router.post('/refresh-cache', authMiddleware, (_req, res) => {
   pageCache.clear();
+  parentCache = null;
+  parentCacheTime = 0;
   childPageIds = null;
   childPageIdsCacheTime = 0;
   res.redirect('/content');
