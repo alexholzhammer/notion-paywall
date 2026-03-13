@@ -8,7 +8,7 @@ services:
       # Persist SQLite database outside the container
       - paywall-data:/app/data
     networks:
-      - traefik-public
+      - root_default
     labels:
       # ── Traefik integration ──────────────────────────────────────────────
       - "traefik.enable=true"
@@ -45,5 +45,5 @@ volumes:
 
 networks:
   # Must match the external network your Traefik instance is connected to
-  traefik-public:
+  root_default:
     external: true
