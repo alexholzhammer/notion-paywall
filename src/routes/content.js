@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { getEmailByToken } = require('../db');
-const { getChildPageIds, getPageContent } = require('../notion');
+const { getChildPageIds, getChildPages, getPageContent } = require('../notion');
 
 const router = express.Router();
 
@@ -48,6 +48,42 @@ function authMiddleware(req, res, next) {
   req.userEmail = email;
   next();
 }
+
+router.get('/', authMiddleware, async (req, res, next) => {
+  try {
+    const pages = await getChildPages();
+
+    const listHtml = pages.length
+      ? '<ul class="page-list">' +
+        pages.map(p =>
+          `<li><a href="/content/${encodeURIComponent(p.id)}">${escapeHtml(p.title)}</a></li>`
+        ).join('') +
+        '</ul>'
+      : '<p>No pages found under the parent page.</p>';
+
+    const template = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'views', 'content.html'),
+      'utf8'
+    );
+
+    const html = template
+      .replace(/{{TITLE}}/g, 'Your Content')
+      .replace('{{BODY_HTML}}', listHtml)
+      .replace(/{{EMAIL}}/g, escapeHtml(req.userEmail));
+
+    res.send(html);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Allow users to clear their cache (force refresh from Notion)
+router.post('/refresh-cache', authMiddleware, (_req, res) => {
+  pageCache.clear();
+  childPageIds = null;
+  childPageIdsCacheTime = 0;
+  res.redirect('/content');
+});
 
 router.get('/:pageId', authMiddleware, async (req, res, next) => {
   try {

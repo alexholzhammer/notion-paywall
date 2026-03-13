@@ -99,6 +99,32 @@ async function getChildPageIds() {
 }
 
 /**
+ * Return all child pages directly under the parent page as { id, title } pairs.
+ */
+async function getChildPages() {
+  const pages = [];
+  let cursor;
+
+  do {
+    const response = await notion.blocks.children.list({
+      block_id: PAGE_ID,
+      start_cursor: cursor,
+      page_size: 100,
+    });
+
+    for (const block of response.results) {
+      if (block.type === 'child_page') {
+        pages.push({ id: block.id, title: block.child_page.title || 'Untitled' });
+      }
+    }
+
+    cursor = response.next_cursor;
+  } while (cursor);
+
+  return pages;
+}
+
+/**
  * Return a specific child page as HTML, fetched by its page ID.
  */
 async function getPageContent(pageId) {
@@ -253,4 +279,4 @@ async function getPreview(count = 5) {
   return { title, previewHtml, totalBlocks: blocks.length };
 }
 
-module.exports = { getFullContent, getPreview, getChildPageIds, getPageContent };
+module.exports = { getFullContent, getPreview, getChildPageIds, getChildPages, getPageContent };
