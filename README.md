@@ -1,3 +1,5 @@
+[//]: # (Initial deployment: 2026-03-13)
+
 # Notion Paywall
 
 A lightweight Express.js paywall that gates a Notion page behind a one-time Stripe payment.
