@@ -1,0 +1,36 @@
+name: Deploy to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Hostinger VPS
+        uses: hostinger/deploy-on-vps@v2
+        with:
+          api-key: ${{ secrets.HOSTINGER_API_KEY }}
+          virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
+          project-name: notion-paywall
+          docker-compose-path: docker-compose.yml
+          environment-variables: |
+            NODE_ENV=production
+            BASE_URL=https://notionpaywall.automatisierer.io
+            PORT=3000
+            NOTION_API_KEY=${{ secrets.NOTION_API_KEY }}
+            NOTION_PAGE_ID=${{ secrets.NOTION_PAGE_ID }}
+            PREVIEW_BLOCKS=${{ vars.PREVIEW_BLOCKS }}
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_PRICE_ID=${{ secrets.STRIPE_PRICE_ID }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+            STRIPE_PRICE_DISPLAY=${{ vars.STRIPE_PRICE_DISPLAY }}
+            PRODUCT_NAME=${{ vars.PRODUCT_NAME }}
+            CONTENT_CACHE_TTL_MS=${{ vars.CONTENT_CACHE_TTL_MS }}
+            DB_PATH=/app/data/paywall.db
