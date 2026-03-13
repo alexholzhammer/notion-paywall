@@ -11,6 +11,31 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // 30-day cookie
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
+const POLL_ATTEMPTS = 3;
+const POLL_DELAY_MS = 1000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Retrieve a Checkout Session from Stripe, retrying up to POLL_ATTEMPTS times
+ * (with POLL_DELAY_MS between each) until payment_status is 'paid'.
+ * Returns the session once paid, or null if all attempts are exhausted.
+ */
+async function retrievePaidSession(sessionId) {
+  for (let attempt = 1; attempt <= POLL_ATTEMPTS; attempt++) {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status === 'paid') {
+      return session;
+    }
+    if (attempt < POLL_ATTEMPTS) {
+      await sleep(POLL_DELAY_MS);
+    }
+  }
+  return null;
+}
+
 router.get('/', async (req, res, next) => {
   try {
     const { session_id } = req.query;
@@ -19,11 +44,17 @@ router.get('/', async (req, res, next) => {
       return res.redirect('/');
     }
 
-    // Retrieve and verify the Checkout Session with Stripe
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    // Retrieve and verify the Checkout Session, retrying to handle the race
+    // condition where Stripe hasn't yet marked the session as paid by the time
+    // the browser lands on /success.
+    const session = await retrievePaidSession(session_id);
 
-    if (session.payment_status !== 'paid') {
-      return res.redirect('/');
+    if (!session) {
+      return res.status(402).send(
+        '<p>Payment not confirmed yet. Please wait a moment and ' +
+        '<a href="/success?session_id=' + encodeURIComponent(session_id) + '">try again</a>, ' +
+        'or contact <a href="mailto:support@automatisierer.io">support@automatisierer.io</a>.</p>'
+      );
     }
 
     const email = (

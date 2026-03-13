@@ -14,13 +14,13 @@ services:
       - "traefik.enable=true"
 
       # Router — HTTPS
-      - "traefik.http.routers.paywall.rule=Host(`paywall.automatisierer.io`)"
+      - "traefik.http.routers.paywall.rule=Host(`notionpaywall.automatisierer.io`)"
       - "traefik.http.routers.paywall.entrypoints=websecure"
       - "traefik.http.routers.paywall.tls=true"
       - "traefik.http.routers.paywall.tls.certresolver=letsencrypt"
 
       # Router — HTTP (redirect to HTTPS)
-      - "traefik.http.routers.paywall-http.rule=Host(`paywall.automatisierer.io`)"
+      - "traefik.http.routers.paywall-http.rule=Host(`notionpaywall.automatisierer.io`)"
       - "traefik.http.routers.paywall-http.entrypoints=web"
       - "traefik.http.routers.paywall-http.middlewares=redirect-to-https"
 
